@@ -69,6 +69,7 @@ public class armile extends HttpServlet
 						String upquery="select flag from gis_portal.project_master where project_id='"+prjtid+"'";
 						ResultSet set=upstat.executeQuery(upquery);
 						out.print("New Branch");
+						out.print("New Editted");
 						if(set.next())
 						{
 							Statement fupd=con.createStatement();

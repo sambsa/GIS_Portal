@@ -1,0 +1,93 @@
+import logs.MyConnection;
+import java.io.*;
+import java.util.*;
+import java.text.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.sql.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.text.ParseException;
+
+public class armile extends HttpServlet
+{
+  public void doPost(HttpServletRequest rq, HttpServletResponse rs) throws IOException,ServletException
+	{
+		rs.setContentType("text/html");
+		PrintWriter out=rs.getWriter();
+		HttpSession session=rq.getSession(false);
+		Connection con=null;
+	
+			//logs.MyConnection mc=new MyConnection();
+			//mc.getConnection();
+			//out.print("got it...");
+			String rowcount=rq.getParameter("rowcount");
+			try{
+		Class.forName("org.postgresql.Driver");
+		con=DriverManager.getConnection("jdbc:postgresql://10.50.27.11:5432/GIS","postgres","123");	
+				//out.print(rq.getParameter("mname1"));
+				int rc=Integer.parseInt(rowcount);
+				String prjtid=rq.getParameter("pid1");
+				//out.print("rowcount: "+rowcount);
+				for(int i=1; i<=rc; i++)
+				{
+					String p="pid"+i;
+					String m="mname"+i;
+					String d="date"+i;
+					String py="ps"+i;
+					String pid=rq.getParameter(p);
+					String mname=rq.getParameter(m);
+					String date=rq.getParameter(d);
+					String ps=rq.getParameter(py);
+					//out.print(pid+" / "+mname+" / "+date+" / "+ps+"<br>");
+					Statement state=con.createStatement();
+					String qry1="select mid from gis_portal.autogen";
+					ResultSet rss=state.executeQuery(qry1);
+					if(rss.next())
+					{
+						String mid="MileStone"+rss.getInt(1);
+						SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+						java.util.Date dStr = formatter.parse(date);
+						java.sql.Date sl = new java.sql.Date(dStr.getTime());
+						PreparedStatement pst=con.prepareStatement("insert into gis_portal.project_milestone values(?,?,?,?,?,?,?,?,?,?,?)");
+						pst.setString(1,pid);
+						pst.setString(2,mid);
+						pst.setString(3,mname);
+						pst.setDate(4,sl);
+						pst.setString(5,"");
+						pst.setString(6,"");
+						pst.setDate(7,null);
+						pst.setDate(8,null);
+						pst.setDate(9,null);
+						pst.setString(10,"");
+						pst.setString(11,ps);
+						pst.executeUpdate();
+						int msid=rss.getInt(1)+1;
+						Statement state1=con.createStatement();
+						String query1="update gis_portal.autogen set mid="+msid;
+						state1.executeUpdate(query1);Statement upstat=con.createStatement();
+						String upquery="select flag from gis_portal.project_master where project_id='"+prjtid+"'";
+						ResultSet set=upstat.executeQuery(upquery);
+						if(set.next())
+						{
+							Statement fupd=con.createStatement();
+							int f=set.getInt(1)+1;
+							Date ud=new Date();
+							String fqry="update gis_portal.project_master set creation_status='Project is created', flag="+f+" , created_by='"+session.getAttribute("usr_id")+"', datetime='"+ud.toString()+"' where project_id='"+prjtid+"'";
+							fupd.executeUpdate(fqry);
+							out.print("<script>alert('mile stone is created..Project created ended successfully...'); </script>");
+						}
+						else
+						{
+							//out.println("Sorry!!!");
+						}
+					}
+
+				}
+			}
+			catch(Exception e){
+				out.print(e);
+			}
+		
+	}
+}
